@@ -43,47 +43,88 @@ import shadow.tac.nodes.TACThrow;
 import shadow.tac.nodes.TACTypeId;
 import shadow.tac.nodes.TACUnary;
 
-public interface TACVisitor {	
-	public abstract void visit(TACAllocateVariable node) throws ShadowException;	
-	public abstract void visit(TACBinary node) throws ShadowException;	
-	public abstract void visit(TACBlock node) throws ShadowException;
-	public abstract void visit(TACBranch node) throws ShadowException;
-	public abstract void visit(TACCall node) throws ShadowException;
-	public abstract void visit(TACCallFinallyFunction node) throws ShadowException;
-	public abstract void visit(TACCast node) throws ShadowException;
-	public abstract void visit(TACCatch node) throws ShadowException;
-	public abstract void visit(TACCatchPad node) throws ShadowException;
-	public abstract void visit(TACCatchRet node) throws ShadowException;
-	public abstract void visit(TACClass node) throws ShadowException;
-	public abstract void visit(TACClassData node) throws ShadowException;
-	public abstract void visit(TACCleanupPad node) throws ShadowException;
-	public abstract void visit(TACCopyMemory node) throws ShadowException;
-	public abstract void visit(TACChangeReferenceCount node) throws ShadowException;
-	public abstract void visit(TACLabel node) throws ShadowException;	
-	public abstract void visit(TACLabelAddress node) throws ShadowException;
-	public abstract void visit(TACLandingPad node) throws ShadowException;
-	public abstract void visit(TACLiteral node) throws ShadowException;
-	public abstract void visit(TACLoad node) throws ShadowException;
-	public abstract void visit(TACLocalEscape node) throws ShadowException;
-	public abstract void visit(TACLocalLoad node) throws ShadowException;
-	public abstract void visit(TACLocalRecover node) throws ShadowException;
-	public abstract void visit(TACLocalStore node) throws ShadowException;
-	public abstract void visit(TACLongToPointer node) throws ShadowException;
-	public abstract void visit(TACMethodName node) throws ShadowException;
-	public abstract void visit(TACMethodPointer node) throws ShadowException;
-	public abstract void visit(TACMethodTable tacMethodTable) throws ShadowException;
-	public abstract void visit(TACNewArray node) throws ShadowException;
-	public abstract void visit(TACNewObject node) throws ShadowException;
-	public abstract void visit(TACPhi node) throws ShadowException;	
-	public abstract void visit(TACPointerToLong node) throws ShadowException;
-	public abstract void visit(TACResume node) throws ShadowException;
-	public abstract void visit(TACSequenceElement node) throws ShadowException;
-	public abstract void visit(TACCleanupRet node) throws ShadowException;
-	public abstract void visit(TACReturn node) throws ShadowException;	
-	public abstract void visit(TACSequence node) throws ShadowException;
-	public abstract void visit(TACStore node) throws ShadowException;
-	public abstract void visit(TACThrow node) throws ShadowException;
-	public abstract void visit(TACTypeId node) throws ShadowException;
-	public abstract void visit(TACUnary node) throws ShadowException;	
-	public abstract void visit(TACParameter node) throws ShadowException;
+public interface TACVisitor {
+  public abstract void visit(TACAllocateVariable node) throws ShadowException;
+
+  public abstract void visit(TACBinary node) throws ShadowException;
+
+  public abstract void visit(TACBlock node) throws ShadowException;
+
+  public abstract void visit(TACBranch node) throws ShadowException;
+
+  public abstract void visit(TACCall node) throws ShadowException;
+
+  public abstract void visit(TACCallFinallyFunction node) throws ShadowException;
+
+  public abstract void visit(TACCast node) throws ShadowException;
+
+  public abstract void visit(TACCatch node) throws ShadowException;
+
+  public abstract void visit(TACCatchPad node) throws ShadowException;
+
+  public abstract void visit(TACCatchRet node) throws ShadowException;
+
+  public abstract void visit(TACClass node) throws ShadowException;
+
+  public abstract void visit(TACClassData node) throws ShadowException;
+
+  public abstract void visit(TACCleanupPad node) throws ShadowException;
+
+  public abstract void visit(TACCopyMemory node) throws ShadowException;
+
+  public abstract void visit(TACChangeReferenceCount node) throws ShadowException;
+
+  public abstract void visit(TACLabel node) throws ShadowException;
+
+  public abstract void visit(TACLabelAddress node) throws ShadowException;
+
+  public abstract void visit(TACLandingPad node) throws ShadowException;
+
+  public abstract void visit(TACLiteral node) throws ShadowException;
+
+  public abstract void visit(TACLoad node) throws ShadowException;
+
+  public abstract void visit(TACLocalEscape node) throws ShadowException;
+
+  public abstract void visit(TACLocalLoad node) throws ShadowException;
+
+  public abstract void visit(TACLocalRecover node) throws ShadowException;
+
+  public abstract void visit(TACLocalStore node) throws ShadowException;
+
+  public abstract void visit(TACLongToPointer node) throws ShadowException;
+
+  public abstract void visit(TACMethodName node) throws ShadowException;
+
+  public abstract void visit(TACMethodPointer node) throws ShadowException;
+
+  public abstract void visit(TACMethodTable tacMethodTable) throws ShadowException;
+
+  public abstract void visit(TACNewArray node) throws ShadowException;
+
+  public abstract void visit(TACNewObject node) throws ShadowException;
+
+  public abstract void visit(TACPhi node) throws ShadowException;
+
+  public abstract void visit(TACPointerToLong node) throws ShadowException;
+
+  public abstract void visit(TACResume node) throws ShadowException;
+
+  public abstract void visit(TACSequenceElement node) throws ShadowException;
+
+  public abstract void visit(TACCleanupRet node) throws ShadowException;
+
+  public abstract void visit(TACReturn node) throws ShadowException;
+
+  public abstract void visit(TACSequence node) throws ShadowException;
+
+  public abstract void visit(TACStore node) throws ShadowException;
+
+  public abstract void visit(TACThrow node) throws ShadowException;
+
+  public abstract void visit(TACTypeId node) throws ShadowException;
+
+  public abstract void visit(TACUnary node) throws ShadowException;
+
+  public abstract void visit(TACParameter node) throws ShadowException;
 }

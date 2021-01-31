@@ -32,310 +32,315 @@ import shadow.typecheck.type.Type;
 
 /**
  * Represents an entire "class" or "unit" in TAC.
- * 
- * Consists of the module's type, references, fields, constants, methods, and subclasses.
+ *
+ * <p>Consists of the module's type, references, fields, constants, methods, and subclasses.
  */
 public class TACModule {
-    private final Type type;    
-    private final Map<String, Type> fields = new LinkedHashMap<String, Type>();
-    private final List<TACConstant> constants = new ArrayList<TACConstant>();
-    private final List<TACMethod> methods = new ArrayList<TACMethod>();
-    private final List<TACModule> innerClasses = new ArrayList<TACModule>();
-    
-       
+  private final Type type;
+  private final Map<String, Type> fields = new LinkedHashMap<String, Type>();
+  private final List<TACConstant> constants = new ArrayList<TACConstant>();
+  private final List<TACMethod> methods = new ArrayList<TACMethod>();
+  private final List<TACModule> innerClasses = new ArrayList<TACModule>();
 
-    public TACModule(Type moduleType) {
-        type = moduleType;
-        
-        if (moduleType instanceof ClassType) {
-            for (Entry<String, ? extends ModifiedType> field : ((ClassType) moduleType).orderAllFields())
-                // if we have a class, then set all the field types
-                fields.put(field.getKey(), field.getValue().getType());
-        }        
-    }    
+  public TACModule(Type moduleType) {
+    type = moduleType;
 
-    public Type getType() {
-        return type;
+    if (moduleType instanceof ClassType) {
+      for (Entry<String, ? extends ModifiedType> field : ((ClassType) moduleType).orderAllFields())
+        // if we have a class, then set all the field types
+        fields.put(field.getKey(), field.getValue().getType());
+    }
+  }
+
+  public Type getType() {
+    return type;
+  }
+
+  public boolean isClass() {
+    return type instanceof ClassType;
+  }
+
+  public ClassType getClassType() {
+    if (isClass()) return (ClassType) type;
+
+    throw new IllegalStateException();
+  }
+
+  public boolean isInterface() {
+    return type instanceof InterfaceType;
+  }
+
+  public InterfaceType getInterfaceType() {
+    return (InterfaceType) type;
+  }
+
+  public Set<String> getFieldNames() {
+    return fields.keySet();
+  }
+
+  public Collection<Type> getFieldTypes() {
+    return fields.values();
+  }
+
+  public Type getFieldType(String name) {
+    return fields.get(name);
+  }
+
+  public void addConstant(TACConstant constant) {
+    constants.add(constant);
+  }
+
+  public List<TACConstant> getConstants() {
+    return constants;
+  }
+
+  public void addMethod(TACMethod method) {
+    methods.add(method);
+  }
+
+  public void addInnerClass(TACModule innerClass) {
+    innerClasses.add(innerClass);
+  }
+
+  public List<TACModule> getInnerClasses() {
+    return innerClasses;
+  }
+
+  public List<TACModule> getAllInnerClasses() {
+    List<TACModule> allInnerClasses = new ArrayList<TACModule>();
+    allInnerClasses.addAll(innerClasses);
+
+    for (TACModule innerClass : innerClasses)
+      allInnerClasses.addAll(innerClass.getAllInnerClasses());
+
+    return allInnerClasses;
+  }
+
+  public List<TACMethod> getMethods() {
+
+    List<TACMethod> allMethods = new ArrayList<TACMethod>();
+    allMethods.addAll(methods);
+
+    for (TACModule innerClass : getAllInnerClasses()) allMethods.addAll(innerClass.methods);
+
+    return allMethods;
+  }
+
+  @Override
+  public String toString() {
+    final StringWriter writer = new StringWriter();
+
+    try {
+      TextOutput output = new TextOutput(writer);
+
+      output.build(this);
+    } catch (ShadowException ex) {
+      return "Error";
     }
 
-    public boolean isClass() {
-        return type instanceof ClassType;
-    }
+    return writer.toString();
+  }
 
-    public ClassType getClassType() {
-    	if( isClass() )
-    		return (ClassType) type;
-    	
-    	throw new IllegalStateException();
-    }
+  public List<ControlFlowGraph> optimizeTAC(ErrorReporter reporter, boolean checkOnly) {
 
-    public boolean isInterface() {
-        return type instanceof InterfaceType;
-    }
+    List<TACMethod> methodList = getMethods();
+    List<ControlFlowGraph> graphs = new ArrayList<ControlFlowGraph>(methodList.size());
 
-    public InterfaceType getInterfaceType() {
-        return (InterfaceType) type;
-    }
+    for (TACMethod method : methodList) {
+      MethodSignature signature = method.getSignature();
 
-    public Set<String> getFieldNames() {
-        return fields.keySet();
-    }
+      // don't bother with unimplemented methods
+      if (!signature.getModifiers().isAbstract() && !signature.isImport()) {
 
-    public Collection<Type> getFieldTypes() {
-        return fields.values();
-    }
+        // adds garbage collection and code that cleans up variables that need garbage collection
+        // at the end of the method
+        method.addGarbageCollection();
 
-    public Type getFieldType(String name) {
-        return fields.get(name);
-    }
+        ControlFlowGraph graph = new ControlFlowGraph(method);
 
-    public void addConstant(TACConstant constant) {
-        constants.add(constant);
-    }
-
-    public List<TACConstant> getConstants() {
-        return constants;
-    }
-
-    public void addMethod(TACMethod method) {
-        methods.add(method);
-    }
-    
-    public void addInnerClass(TACModule innerClass) {
-    	innerClasses.add(innerClass);
-    }
-    
-    public List<TACModule> getInnerClasses() {
-    	return innerClasses;
-    }
-    
-    public List<TACModule> getAllInnerClasses() {
-    	List<TACModule> allInnerClasses = new ArrayList<TACModule>();
-    	allInnerClasses.addAll(innerClasses);
-    	
-    	for(TACModule innerClass : innerClasses)
-    		allInnerClasses.addAll(innerClass.getAllInnerClasses());
-    	
-    	return allInnerClasses;
-    }
-
-    public List<TACMethod> getMethods() {
-    	
-    	List<TACMethod> allMethods = new ArrayList<TACMethod>();
-    	allMethods.addAll(methods);
-    	
-    	for(TACModule innerClass : getAllInnerClasses() )
-    		allMethods.addAll(innerClass.methods);
-    	
-        return allMethods;
-    }
-
-    @Override
-    public String toString() {
-        final StringWriter writer = new StringWriter();
-        
+        /*
+        PrintWriter out;
         try {
-        	TextOutput output = new TextOutput(writer); 
-        	
-            output.build(this);
-        } catch (ShadowException ex) {
-            return "Error";
+        	out = new PrintWriter(new File("clean method.txt"));
+        	out.print(method.toString());
+        	out.close();
+
+        } catch (FileNotFoundException e) {
+        	// TODO Auto-generated catch block
+        	e.printStackTrace();
         }
-        
-        return writer.toString();
+        */
+
+        // do first pass always
+        boolean changed = graph.removeUnreachableCode();
+        graph.removeRedundantErrors(); // some unreachable code errors are redundant
+
+        if (!signature.isVoid() && !graph.returns())
+          graph.addError(
+              signature.getNode(),
+              Error.NOT_ALL_PATHS_RETURN,
+              "Value-returning method "
+                  + signature.getSymbol()
+                  + signature.getMethodType()
+                  + " may not return on all paths");
+
+        graph.addPhiNodes();
+        if (graph.propagateConstants()) changed = true;
+
+        reporter.addAll(graph); // adds errors (if any) to main reporter
+
+        // now keep cycling if there is more unreachable code or
+        // more constants propagated
+        while (changed) {
+          changed = graph.removeUnreachableCode();
+          if (changed) changed = graph.propagateConstants();
+        }
+
+        method.removeUndefinedStores(graph);
+        method.addAllocations();
+
+        graphs.add(graph);
+      }
     }
-    
 
-	public List<ControlFlowGraph> optimizeTAC(ErrorReporter reporter, boolean checkOnly) {
+    return graphs;
+  }
 
-		List<TACMethod> methodList = getMethods();
-		List<ControlFlowGraph> graphs = new ArrayList<ControlFlowGraph>(methodList.size());
-		
-		for( TACMethod method : methodList  ) {
-			MethodSignature signature = method.getSignature();
+  private void addCreateEdges(CallGraph creates) {
+    for (MethodSignature create : creates) {
+      ShadowParser.CreateDeclarationContext declaration =
+          (CreateDeclarationContext) create.getNode();
+      if (declaration.createBlock() != null) {
+        ShadowParser.CreateBlockContext block = declaration.createBlock();
+        if (block.explicitCreateInvocation() != null) {
+          ShadowParser.ExplicitCreateInvocationContext explicitCreate =
+              block.explicitCreateInvocation();
+          MethodSignature signature = explicitCreate.getSignature();
+          // calling this rather than super
+          // we can't put a dependency on a native method, since it doesn't have a control flow
+          // graph
+          if (explicitCreate.getChild(0).getText().equals("this") && !signature.isImport())
+            creates.addEdge(signature, create); // method depends on other signature
+        }
+      }
+    }
+  }
 
-			//don't bother with unimplemented methods
-			if( !signature.getModifiers().isAbstract() && !signature.isImport() ) {	
-				
-				//adds garbage collection and code that cleans up variables that need garbage collection
-				//at the end of the method
-				method.addGarbageCollection();
+  private void addCallEdges(CallGraph calls) {
+    for (MethodSignature method : calls) {
+      ControlFlowGraph graph = calls.getControlFlowGraph(method);
+      graph.addCallEdges(calls, type);
+    }
+  }
 
-				ControlFlowGraph graph = new ControlFlowGraph(method);
-				
-				/*
-				PrintWriter out;
-				try {
-					out = new PrintWriter(new File("clean method.txt"));
-					out.print(method.toString());
-					out.close();
-					
-				} catch (FileNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				*/
-				
-				
-				//do first pass always
-				boolean changed = graph.removeUnreachableCode();
-				graph.removeRedundantErrors(); //some unreachable code errors are redundant
-				
-				if( !signature.isVoid() && !graph.returns() )
-					graph.addError(signature.getNode(), Error.NOT_ALL_PATHS_RETURN, "Value-returning method " + signature.getSymbol() + signature.getMethodType() + " may not return on all paths");
+  private void checkFieldInitialization(
+      CallGraph createGraph, CallGraph callGraph, ErrorReporter reporter) {
+    try {
+      // sort creates by dependence on which calls others
+      // usually not a very complicated relationship
+      List<MethodSignature> creates = createGraph.topologicalSort();
+      Map<MethodSignature, StorageData> methodData = getFieldsLoadedBeforeStores(callGraph);
 
-				graph.addPhiNodes();
-				if( graph.propagateConstants() )
-					changed = true;
-				
-				reporter.addAll(graph); //adds errors (if any) to main reporter
-				
-				//now keep cycling if there is more unreachable code or 
-				//more constants propagated
-				while( changed ) {	
-					changed = graph.removeUnreachableCode();					
-					if( changed )
-						changed = graph.propagateConstants();
-				}				
+      Set<String> fieldsToCheck = new TreeSet<String>();
+      for (Entry<String, VariableDeclaratorContext> entry : type.getFields().entrySet())
+        if (ControlFlowGraph.needsInitialization(entry.getValue()))
+          fieldsToCheck.add(entry.getKey());
 
-				method.removeUndefinedStores(graph);				
-				method.addAllocations();
-				
-				graphs.add(graph);
-			}
-		}
-		
-		return graphs;
-	}
-	
-	private void addCreateEdges(CallGraph creates)
-	{
-		for(MethodSignature create : creates) {			
-			ShadowParser.CreateDeclarationContext declaration = (CreateDeclarationContext) create.getNode();
-			if( declaration.createBlock() != null ) {
-				ShadowParser.CreateBlockContext block = declaration.createBlock();
-				if( block.explicitCreateInvocation() != null ) {
-					ShadowParser.ExplicitCreateInvocationContext explicitCreate = block.explicitCreateInvocation();
-					MethodSignature signature = explicitCreate.getSignature(); 
-					//calling this rather than super
-					//we can't put a dependency on a native method, since it doesn't have a control flow graph
-					if( explicitCreate.getChild(0).getText().equals("this") && !signature.isImport() )						
-						creates.addEdge(signature, create); //method depends on other signature
-				}
-			}
-		}
-	}
-	
-	private void addCallEdges(CallGraph calls)
-	{
-		for(MethodSignature method : calls) {
-			ControlFlowGraph graph = calls.getControlFlowGraph(method);
-			graph.addCallEdges(calls, type);
-		}
-	}
-		
-	private void checkFieldInitialization(CallGraph createGraph, CallGraph callGraph, ErrorReporter reporter)
-	{		
-		try {
-			//sort creates by dependence on which calls others
-			//usually not a very complicated relationship
-			List<MethodSignature> creates = createGraph.topologicalSort();
-			Map<MethodSignature, StorageData> methodData = getFieldsLoadedBeforeStores(callGraph);
-			
-			Set<String> fieldsToCheck = new TreeSet<String>();
-			for(Entry<String, VariableDeclaratorContext> entry : type.getFields().entrySet() )
-				if( ControlFlowGraph.needsInitialization(entry.getValue()) )
-					fieldsToCheck.add(entry.getKey());
-			
-			//nothing to worry about!
-			if( fieldsToCheck.isEmpty() )
-				return;			
-			
-			//fields initialized by each create
-			//useful if one create calls another
-			Map<MethodSignature, Set<String>> initializedFields = new HashMap<MethodSignature, Set<String>>();
-			Map<MethodSignature, Set<String>> priorThisStores = new HashMap<MethodSignature, Set<String>>();
-						
-			for( MethodSignature create : creates ) {
-				ControlFlowGraph graph = createGraph.getControlFlowGraph(create);
-				Set<MethodSignature> incoming = createGraph.getIncoming(create); //can only be a single create or none
-				Set<String> alreadyInitialized;
-				Set<String> thisStores = new HashSet<String>();
-				if( incoming.isEmpty() )
-					alreadyInitialized = new HashSet<String>();
-				else {
-					MethodSignature parent = incoming.iterator().next();
-					alreadyInitialized = initializedFields.get(parent);
-					thisStores.addAll(priorThisStores.get(parent));
-				}
-				
-				Set<String> initialized = graph.getInitializedFields(alreadyInitialized, thisStores, methodData, fieldsToCheck);
-				reporter.addAll(graph); //adds any errors found when getting initialized fields
-				if( !create.getModifiers().isPrivate() ) {
-					for( String field : fieldsToCheck )
-						if( !initialized.contains(field) ) {							
-							Context node = create.getNode();
-							if( node.getParent() == null ) //dummy node, meaning that the create was automatically constructed
-								node = type.getField(field);
-							
-							reporter.addError(node, Error.UNINITIALIZED_FIELD, "Non-nullable field " + field + " might not be initialized by a create");
-						}
-				}
-				initializedFields.put(create, initialized);
-				priorThisStores.put(create, thisStores);
-			}			
-		}
-		catch(CycleFoundException e) {
-			reporter.addError(((MethodSignature)e.getCycleCause()).getNode(), Error.CIRCULAR_CREATE, "Create calls are circular");
-		}		
-	}
+      // nothing to worry about!
+      if (fieldsToCheck.isEmpty()) return;
 
-	private Map<MethodSignature, StorageData> getFieldsLoadedBeforeStores(CallGraph callGraph ) {
-		Map<MethodSignature, StorageData> methodData = new HashMap<MethodSignature, StorageData>();		
-		
-		for( MethodSignature method : callGraph) {
-			ControlFlowGraph graph = callGraph.getControlFlowGraph(method);
-			methodData.put(method, graph.getLoadsBeforeStoresInMethods(type, callGraph));
-		}
-		
-		/* 
-		 * Since methods can call each other, an edge between methods means that the
-		 * caller (end of the edge) should be considered to use the same fields
-		 * as the callee (beginning of the edge)
-		 * things used may need to propagate through the graph 
-		 */
-		boolean changed = true;
-		while( changed ) {
-			changed = false;
-			
-			for( MethodSignature method : callGraph ) {
-				StorageData data = methodData.get(method);
-				
-				for( MethodSignature callee : callGraph.getIncoming(method) )
-					if( data.addAll(methodData.get(callee)) )
-						changed = true;
-			}			
-		}
-		
-		return methodData;
-	}
+      // fields initialized by each create
+      // useful if one create calls another
+      Map<MethodSignature, Set<String>> initializedFields =
+          new HashMap<MethodSignature, Set<String>>();
+      Map<MethodSignature, Set<String>> priorThisStores =
+          new HashMap<MethodSignature, Set<String>>();
 
-	public void checkFieldInitialization(ErrorReporter reporter, List<ControlFlowGraph> graphs) {
-		CallGraph createGraph = new CallGraph();
-		CallGraph callGraph = new CallGraph();
-		for( ControlFlowGraph graph : graphs ) {
-			MethodSignature method = graph.getMethod().getSignature();						
-			if( method.isCreate() && method.getOuter().equals(type) )
-				createGraph.addNode(method, graph);
-			//inner methods (including creates) can be called,
-			//but they must be locked (or be creates), otherwise overrides
-			//could make their behavior unpredictable
-			else if( type.encloses(method.getOuter()) && (method.isCreate() || method.isLocked()) ) 
-				callGraph.addNode(method, graph);			
-		}
-		
-		addCreateEdges(createGraph);
-		addCallEdges(callGraph);
-		checkFieldInitialization(createGraph, callGraph, reporter);
-	}
+      for (MethodSignature create : creates) {
+        ControlFlowGraph graph = createGraph.getControlFlowGraph(create);
+        Set<MethodSignature> incoming =
+            createGraph.getIncoming(create); // can only be a single create or none
+        Set<String> alreadyInitialized;
+        Set<String> thisStores = new HashSet<String>();
+        if (incoming.isEmpty()) alreadyInitialized = new HashSet<String>();
+        else {
+          MethodSignature parent = incoming.iterator().next();
+          alreadyInitialized = initializedFields.get(parent);
+          thisStores.addAll(priorThisStores.get(parent));
+        }
+
+        Set<String> initialized =
+            graph.getInitializedFields(alreadyInitialized, thisStores, methodData, fieldsToCheck);
+        reporter.addAll(graph); // adds any errors found when getting initialized fields
+        if (!create.getModifiers().isPrivate()) {
+          for (String field : fieldsToCheck)
+            if (!initialized.contains(field)) {
+              Context node = create.getNode();
+              if (node.getParent()
+                  == null) // dummy node, meaning that the create was automatically constructed
+              node = type.getField(field);
+
+              reporter.addError(
+                  node,
+                  Error.UNINITIALIZED_FIELD,
+                  "Non-nullable field " + field + " might not be initialized by a create");
+            }
+        }
+        initializedFields.put(create, initialized);
+        priorThisStores.put(create, thisStores);
+      }
+    } catch (CycleFoundException e) {
+      reporter.addError(
+          ((MethodSignature) e.getCycleCause()).getNode(),
+          Error.CIRCULAR_CREATE,
+          "Create calls are circular");
+    }
+  }
+
+  private Map<MethodSignature, StorageData> getFieldsLoadedBeforeStores(CallGraph callGraph) {
+    Map<MethodSignature, StorageData> methodData = new HashMap<MethodSignature, StorageData>();
+
+    for (MethodSignature method : callGraph) {
+      ControlFlowGraph graph = callGraph.getControlFlowGraph(method);
+      methodData.put(method, graph.getLoadsBeforeStoresInMethods(type, callGraph));
+    }
+
+    /*
+     * Since methods can call each other, an edge between methods means that the
+     * caller (end of the edge) should be considered to use the same fields
+     * as the callee (beginning of the edge)
+     * things used may need to propagate through the graph
+     */
+    boolean changed = true;
+    while (changed) {
+      changed = false;
+
+      for (MethodSignature method : callGraph) {
+        StorageData data = methodData.get(method);
+
+        for (MethodSignature callee : callGraph.getIncoming(method))
+          if (data.addAll(methodData.get(callee))) changed = true;
+      }
+    }
+
+    return methodData;
+  }
+
+  public void checkFieldInitialization(ErrorReporter reporter, List<ControlFlowGraph> graphs) {
+    CallGraph createGraph = new CallGraph();
+    CallGraph callGraph = new CallGraph();
+    for (ControlFlowGraph graph : graphs) {
+      MethodSignature method = graph.getMethod().getSignature();
+      if (method.isCreate() && method.getOuter().equals(type)) createGraph.addNode(method, graph);
+      // inner methods (including creates) can be called,
+      // but they must be locked (or be creates), otherwise overrides
+      // could make their behavior unpredictable
+      else if (type.encloses(method.getOuter()) && (method.isCreate() || method.isLocked()))
+        callGraph.addNode(method, graph);
+    }
+
+    addCreateEdges(createGraph);
+    addCallEdges(callGraph);
+    checkFieldInitialization(createGraph, callGraph, reporter);
+  }
 }
